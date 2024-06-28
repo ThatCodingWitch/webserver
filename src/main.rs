@@ -1,3 +1,4 @@
+mod mime_types;
 
 use std::{
     fs,
@@ -36,29 +37,23 @@ fn handle_connection(mut stream: TcpStream) {
         filepath = "/index.html".parse().unwrap()
     }
     let filetype = filepath.split('.').last().unwrap().to_string();
-    let mime_type = match filetype.as_str() {
-        "html" => "text/html",
-        "css" => "text/css",
-        "js" => "application/javascript",
-        "mp4" => "application/mp4",
-        _ => "text/plain",
+    let mime_types = mime_types::get_mime_types();
+    let mime_type = match mime_types.get(&filetype.as_str()) {
+        None => "application/octet-stream",
+        Some(mime) => mime,
     };
 
     filepath = format!("./front-end{}", filepath);
-
     let (contents, status_line) = match fs::read(&filepath) {
         Ok(contents) => (contents, "HTTP/1.1 200".to_string()),
         Err(_) => {
-            filepath = "./errors/404.html".to_string();
+            filepath = "./built-in/404.html".to_string();
             match fs::read(&filepath) {
                 Ok(contents) => (contents, "HTTP/1.1 404".to_string()),
                 Err(_) => (Vec::new(), "HTTP/1.1 500".to_string())
             }
         }
     };
-
-
-
 
 
     let length = contents.len();
