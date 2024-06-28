@@ -1,18 +1,27 @@
 mod mime_types;
 
+use webserver::ThreadPool;
 use std::{
     fs,
-    io::{prelude::*, BufReader},
-    net::{TcpListener, TcpStream},
+    io::prelude::*,
+    net::TcpListener,
+    net::TcpStream,
 };
+use std::io::BufReader;
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
+    let pool = ThreadPool::new(4);
 
     for stream in listener.incoming() {
         let stream = stream.unwrap();
-         handle_connection(stream);
+
+        pool.execute(|| {
+            handle_connection(stream);
+        });
     }
+
+    println!("Shutting down.");
 }
 
 fn handle_connection(mut stream: TcpStream) {
@@ -30,6 +39,8 @@ fn handle_connection(mut stream: TcpStream) {
             return;
         }
     };
+
+    println!("{}", request_line);
 
 
     let mut filepath = request_line.split(' ').nth(1).unwrap().to_string();
@@ -54,7 +65,6 @@ fn handle_connection(mut stream: TcpStream) {
             }
         }
     };
-
 
     let length = contents.len();
     let response = format!(
