@@ -1,4 +1,3 @@
-mod mime_types;
 
 use webserver::ThreadPool;
 use std::{
@@ -47,12 +46,9 @@ fn handle_connection(mut stream: TcpStream) {
     if filepath == "/"   {
         filepath = "/index.html".parse().unwrap()
     }
-    let filetype = filepath.split('.').last().unwrap().to_string();
-    let mime_types = mime_types::get_mime_types();
-    let mime_type = match mime_types.get(&filetype.as_str()) {
-        None => "application/octet-stream",
-        Some(mime) => mime,
-    };
+
+    let mime_type = new_mime_guess::from_path(filepath.clone()).first_or_octet_stream();
+    println!("{:?}", mime_type);
 
     filepath = format!("./front-end{}", filepath);
     let (contents, status_line) = match fs::read(&filepath) {
